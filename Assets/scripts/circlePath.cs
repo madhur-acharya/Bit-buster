@@ -8,11 +8,15 @@ public class circlePath : MonoBehaviour
 	public int vertexCount= 6;
 	public float lineWidth= 0.2f;
 	public float radius= 1f;
-	public bool circleFillScreen= false;
 	public GameObject obj;
+	public GameObject theLine;
 
 	private LineRenderer lineRenderer;
 	private List<GameObject> objectList= new List<GameObject>();
+	private Vector3 center;
+
+	public float touchAngle= 0f;
+	public int touchIndex= 1;
 
 	void Awake()
 	{
@@ -22,14 +26,46 @@ public class circlePath : MonoBehaviour
 	void Start()
 	{
 		EventSystem.current.onTouchTrigger+= addItem;
+		center= transform.position;
 
-		for(int i= 0; i <= vertexCount; i ++)
+		for(int i= 0; i < vertexCount; i ++)
 		{
-			objectList.Add(Instantiate(obj, new Vector3(0, 0, 0), transform.rotation));
+			GameObject circle= Instantiate(obj, new Vector3(0, 0, 0), transform.rotation); 
+			circle.transform.SetParent(transform);
+			circle.GetComponent<SpriteRenderer>().color= new Color( Random.Range(0f, 1f), Random.Range(0f, 1f), Random.Range(0f, 1f));
+			objectList.Add(circle);
 		}
+
+		updatePoints();
 	}
 
 	void Update()
+	{
+		if(Input.touchCount <= 0) return;
+
+		Touch touch= Input.GetTouch(0);
+		Vector3 touchPos= Camera.main.ScreenToWorldPoint(Input.GetTouch(0).position);
+		touchPos.z= 0;
+
+		float delta = (2f * Mathf.PI) / (vertexCount);
+
+		if(touch.phase == TouchPhase.Moved)
+		{
+			float ang= Mathf.Atan2(touchPos.y, touchPos.x);
+			touchAngle= ang;
+			float aproxIndex= ang / delta;
+
+			Debug.DrawLine (transform.position, new Vector3(Mathf.Cos(ang), Mathf.Sin(ang)) * radius);
+
+			ang= (Mathf.Floor(aproxIndex) * delta) + (delta / 2);
+			
+			lineRenderer.SetPosition(1, new Vector3(Mathf.Cos(ang), Mathf.Sin(ang)) * radius);
+			touchAngle= (ang * Mathf.Rad2Deg);
+			touchIndex= (int)Mathf.Floor(aproxIndex);
+		}
+	}
+
+	public void updatePoints()
 	{
 		float deltaAngle = (2f * Mathf.PI) / vertexCount;
 		float angle= 0f;
@@ -44,16 +80,15 @@ public class circlePath : MonoBehaviour
 
 	public void addItem(Vector3 touchPos)
 	{
-		float delta = (2f * Mathf.PI) / vertexCount;
+		GameObject circle= Instantiate(obj, new Vector3(0, 0, 0), transform.rotation); 
+		circle.GetComponent<SpriteRenderer>().color= new Color( Random.Range(0f, 1f), Random.Range(0f, 1f), Random.Range(0f, 1f));
+		circle.transform.SetParent(transform);
+		objectList.Insert((touchIndex < 0 ? objectList.Count + touchIndex : touchIndex), circle);
+		//transform.rotation= Quaternion.Euler(new Vector3(0, 0, touchAngle));
 
-		float ang= Mathf.Atan2(touchPos.y, touchPos.x);
-		Debug.Log(ang * Mathf.Rad2Deg);
-
-
-
-		//objectList.Insert(index, Instantiate(obj, new Vector3(0, 0, 0), transform.rotation));
-		objectList.Add(Instantiate(obj, new Vector3(0, 0, 0), transform.rotation));
 		vertexCount++;
+
+		updatePoints();
 	}
 
 	public void OnDestroy()

@@ -92,15 +92,23 @@ public class circlePath : MonoBehaviour
 		}
 	}
 
-	public void updatePoints()
+	public void updatePoints(int exclusion= 0)
 	{
 		float deltaAngle = (2f * Mathf.PI) / vertexCount;
 		float angle= 0f;
 
 		for(int i= 0; i < objectList.Count; i++)
 		{
+			GameObject itm= objectList[i];
 			Vector3 pos= new Vector3(radius * Mathf.Cos(angle), radius * Mathf.Sin(angle));
-			objectList[i].transform.position= pos;
+			if(i == exclusion)
+			{
+				itm.GetComponent<BitObject>().lerpToPosition(deltaAngle * i, 0);
+			}
+			else
+			{
+				itm.GetComponent<BitObject>().lerpToPosition(deltaAngle * i);
+			}
 			angle+= deltaAngle;
 		}
 	}
@@ -109,25 +117,29 @@ public class circlePath : MonoBehaviour
 	{
 		lineRenderer.enabled= false;
 
-		GameObject circle= Instantiate(obj, new Vector3(0, 0, 0), transform.rotation); 
-		circle.GetComponent<Image>().color= new Color( Random.Range(0f, 1f), Random.Range(0f, 1f), Random.Range(0f, 1f));
-		circle.transform.SetParent(transform);
-		circle.transform.SetParent(panel);
-		circle.transform.GetChild(0).GetComponent<TMPro.TextMeshProUGUI>().text= objectList.Count + "";
-		circle.GetComponent<RectTransform>().localScale= new Vector3(1f, 1f, 1f);
+		GameObject bit= Instantiate(obj, new Vector3(0, 0, 0), transform.rotation); 
+		bit.GetComponent<Image>().color= new Color( Random.Range(0f, 1f), Random.Range(0f, 1f), Random.Range(0f, 1f));
+		bit.transform.SetParent(transform);
+		bit.transform.SetParent(panel);
+		bit.transform.GetChild(0).GetComponent<TMPro.TextMeshProUGUI>().text= objectList.Count + "";
+		bit.GetComponent<RectTransform>().localScale= new Vector3(1f, 1f, 1f);
 
 		if(touchIndex >= objectList.Count)
-			objectList.Add(circle);
+			objectList.Add(bit);
 		else
-			objectList.Insert(touchIndex, circle);
+			objectList.Insert(touchIndex, bit);
 
 		vertexCount++;
-		updatePoints();
+		updatePoints(touchIndex);
+
+		float deltaAngle = (2f * Mathf.PI) / vertexCount;
+		Vector3 pos= new Vector3(radius * Mathf.Cos(deltaAngle * touchIndex), radius * Mathf.Sin(deltaAngle * touchIndex));
+		bit.transform.position= pos;
 	}
 
 	public void OnDestroy()
 	{
-		
+
 	}
 
 	#if UNITY_EDITOR

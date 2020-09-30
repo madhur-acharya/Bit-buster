@@ -21,6 +21,7 @@ public class circlePath : MonoBehaviour
 	private float actualAngle= 0f;
 	private int touchIndex= 0;
 	private float currentIndex= 0;
+	private int maxBits= 13;
 
 	private float touchRate= 0.25f;
 	private float canTouch= -1f;
@@ -51,7 +52,8 @@ public class circlePath : MonoBehaviour
 
 	void Update()
 	{
-		if(Input.touchCount <= 0) return;
+		mouseInput();
+		/*if(Input.touchCount <= 0) return;
 
 		Touch touch= Input.GetTouch(0);
 		Vector3 touchPos= Camera.main.ScreenToWorldPoint(Input.GetTouch(0).position);
@@ -89,6 +91,40 @@ public class circlePath : MonoBehaviour
 				addItem();
 				canTouch= Time.time + touchRate;
 			}
+		}*/
+	}
+
+	void mouseInput()
+	{
+		Vector3 touchPos= Camera.main.ScreenToWorldPoint(Input.mousePosition);
+		touchPos.z= 0;
+
+		float delta = (2f * Mathf.PI) / (vertexCount);
+
+		lineRenderer.enabled= true;
+		touchAngle= Mathf.Atan2(touchPos.y, touchPos.x);
+		actualAngle= (touchAngle >= 0 ? touchAngle : ((Mathf.PI * 2) + touchAngle)) * Mathf.Rad2Deg;
+
+		float aproxIndex= touchAngle / delta;
+		Debug.DrawLine (transform.position, new Vector3(Mathf.Cos(touchAngle), Mathf.Sin(touchAngle)) * radius);
+
+		touchAngle= (Mathf.Floor(aproxIndex) * delta) + (delta / 2);
+		lineRenderer.SetPosition(1, new Vector3(Mathf.Cos(touchAngle), Mathf.Sin(touchAngle)) * radius);
+		
+		for(int i= 0; i <= vertexCount; i++)
+		{
+			currentIndex= i * delta * Mathf.Rad2Deg;
+			if(actualAngle <= (i * delta * Mathf.Rad2Deg))
+			{
+				touchIndex= i;
+				break;
+			}
+		}
+
+		if(Time.time > canTouch && Input.GetMouseButtonDown(0))
+		{
+			addItem();
+			canTouch= Time.time + touchRate;
 		}
 	}
 
@@ -103,7 +139,7 @@ public class circlePath : MonoBehaviour
 			Vector3 pos= new Vector3(radius * Mathf.Cos(angle), radius * Mathf.Sin(angle));
 			if(i == exclusion)
 			{
-				itm.GetComponent<BitObject>().lerpToPosition(deltaAngle * i, 0);
+				itm.GetComponent<BitObject>().lerpToPosition(pos, 0);
 			}
 			else
 			{
@@ -115,6 +151,8 @@ public class circlePath : MonoBehaviour
 
 	public void addItem()
 	{
+		if(objectList.Count >= maxBits) return;
+
 		lineRenderer.enabled= false;
 
 		GameObject bit= Instantiate(obj, new Vector3(0, 0, 0), transform.rotation); 
@@ -132,9 +170,9 @@ public class circlePath : MonoBehaviour
 		vertexCount++;
 		updatePoints(touchIndex);
 
-		float deltaAngle = (2f * Mathf.PI) / vertexCount;
+		/*float deltaAngle = (2f * Mathf.PI) / vertexCount;
 		Vector3 pos= new Vector3(radius * Mathf.Cos(deltaAngle * touchIndex), radius * Mathf.Sin(deltaAngle * touchIndex));
-		bit.transform.position= pos;
+		bit.transform.position= pos;*/
 	}
 
 	public void OnDestroy()

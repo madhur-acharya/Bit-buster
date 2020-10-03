@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class RNJesus
+public static class RNJesus
 {
 	public static long gerRandomPowO2(long lowerLimit= 0, long upperLimit= 3)
 	{

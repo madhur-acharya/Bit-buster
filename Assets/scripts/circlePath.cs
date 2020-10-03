@@ -53,7 +53,7 @@ public class circlePath : MonoBehaviour
 
 		for(int i= 0; i < 3; i ++)
 		{
-			addItem(true);
+			addItem(true, "bit");
 		}
 
 		updatePoints();
@@ -160,22 +160,11 @@ public class circlePath : MonoBehaviour
 		}
 	}
 
-	public void addItem(bool addDIrectly= false)
+	public void addItem(bool addDIrectly= false, string type= "random")
 	{
 		if(objectList.Count >= maxBits) return;
 
-		long numb= RNJesus.gerRandomPowO2();
-		GameObject bit= Instantiate(obj, new Vector3(0, 0, 0), transform.rotation); 
-		bit.GetComponent<Image>().color= new Color( Random.Range(0f, 1f), Random.Range(0f, 1f), Random.Range(0f, 1f));
-		bit.transform.SetParent(transform);
-		bit.transform.SetParent(panel);
-		bit.transform.GetChild(0).GetComponent<TMPro.TextMeshProUGUI>().text= numb + "";
-
-		BitObject bitObject= bit.GetComponent<BitObject>();
-		bitObject.objectType= "bit";
-		bitObject.value= numb;
-
-		bit.GetComponent<RectTransform>().localScale= new Vector3(1f, 1f, 1f);
+		GameObject bit= createBitObject(type);
 
 		if(!addDIrectly)
 		{
@@ -202,16 +191,59 @@ public class circlePath : MonoBehaviour
 
 	}
 
+	private GameObject createBitObject(string explicitType= "random")
+	{
+		List<float> space= new List<float>();
+		space.Add(0.8f);
+		space.Add(0.2f);
+		int type= RNJesus.biasedRandom(space);
+		long numb= RNJesus.gerRandomPowO2();
+
+		GameObject bit= Instantiate(obj, new Vector3(0, 0, 0), transform.rotation); 
+		bit.GetComponent<Image>().color= new Color( Random.Range(0f, 1f), Random.Range(0f, 1f), Random.Range(0f, 1f));
+		bit.transform.SetParent(transform);
+		bit.transform.SetParent(panel);
+		bit.GetComponent<RectTransform>().localScale= new Vector3(1f, 1f, 1f);
+		BitObject bitObject= bit.GetComponent<BitObject>();
+
+		switch(explicitType)
+		{
+			case "random" : {
+				if(type == 0)
+				{
+					bit.transform.GetChild(0).GetComponent<TMPro.TextMeshProUGUI>().text= numb + "";
+					bitObject.objectType= "bit";
+					bitObject.value= numb;
+				}
+				else
+				{
+					bitObject.objectType= "combine";
+					bit.transform.GetChild(0).GetComponent<TMPro.TextMeshProUGUI>().text= "+";
+				}
+				break;
+			};
+			case "bit" : {
+				bit.transform.GetChild(0).GetComponent<TMPro.TextMeshProUGUI>().text= numb + "";
+				bitObject.objectType= "bit";
+				bitObject.value= numb;
+				break;
+			}
+			default : {
+				bitObject.objectType= "bit";
+				bit.transform.GetChild(0).GetComponent<TMPro.TextMeshProUGUI>().text= "+";
+				bitObject.value= numb;
+				break;
+			}
+		}
+
+		return bit;
+	}
+
 	private IEnumerator addItemAsync(GameObject item, float delay= 0.2f)
 	{
 		yield return new WaitForSeconds(delay);
 		centerObject= item;
 		centerObject.SetActive(true);
-	}
-
-	public void OnDestroy()
-	{
-
 	}
 
 	#if UNITY_EDITOR

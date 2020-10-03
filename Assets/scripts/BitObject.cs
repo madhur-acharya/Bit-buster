@@ -13,6 +13,9 @@ public class BitObject : MonoBehaviour
 	private float currentAngle= 0f;
 	private bool lerpLinearly= false;
 
+	public string objectType= "bit";
+	public long value= 0;
+
 	void Start()
 	{
 		if(destinationAngle == null)

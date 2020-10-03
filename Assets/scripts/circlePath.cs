@@ -6,7 +6,7 @@ using UnityEngine.UI;
 [RequireComponent(typeof(LineRenderer))]
 public class circlePath : MonoBehaviour
 {
-	public int vertexCount= 6;
+	private int vertexCount= 0;
 	public float lineWidth= 0.2f;
 	public float radius= 1f;
 	public GameObject obj;
@@ -22,8 +22,9 @@ public class circlePath : MonoBehaviour
 	private int touchIndex= 0;
 	private float currentIndex= 0;
 	private int maxBits= 13;
+	private GameObject centerObject;
 
-	private float touchRate= 0.25f;
+	private float touchRate= 0.4f;
 	private float canTouch= -1f;
 	private Vector3 touchPos;
 
@@ -36,15 +37,23 @@ public class circlePath : MonoBehaviour
 	{
 		center= transform.position;
 
-		for(int i= 0; i < vertexCount; i ++)
+		long numb= RNJesus.gerRandomPowO2();
+		centerObject= Instantiate(obj, center, transform.rotation); 
+		centerObject.GetComponent<Image>().color= new Color( Random.Range(0f, 1f), Random.Range(0f, 1f), Random.Range(0f, 1f));
+		centerObject.transform.SetParent(transform);
+		centerObject.transform.SetParent(panel);
+		centerObject.transform.GetChild(0).GetComponent<TMPro.TextMeshProUGUI>().text= numb + "";
+
+		BitObject bitObject= centerObject.GetComponent<BitObject>();
+		bitObject.objectType= "bit";
+		bitObject.value= numb;
+
+		centerObject.GetComponent<RectTransform>().localScale= new Vector3(1f, 1f, 1f);
+		centerObject.GetComponent<BitObject>().enabled= false;
+
+		for(int i= 0; i < 3; i ++)
 		{
-			GameObject circle= Instantiate(obj, new Vector3(0, 0, 0), transform.rotation); 
-			circle.transform.SetParent(transform);
-			circle.transform.SetParent(panel);
-			circle.GetComponent<RectTransform>().localScale= new Vector3(1f, 1f, 1f);
-			circle.transform.GetChild(0).GetComponent<TMPro.TextMeshProUGUI>().text= i + "";
-			circle.GetComponent<Image>().color= new Color( Random.Range(0f, 1f), Random.Range(0f, 1f), Random.Range(0f, 1f));
-			objectList.Add(circle);
+			addItem(true);
 		}
 
 		updatePoints();
@@ -96,6 +105,8 @@ public class circlePath : MonoBehaviour
 
 	void mouseInput()
 	{
+		if(vertexCount == 0) return;
+
 		Vector3 touchPos= Camera.main.ScreenToWorldPoint(Input.mousePosition);
 		touchPos.z= 0;
 
@@ -149,30 +160,53 @@ public class circlePath : MonoBehaviour
 		}
 	}
 
-	public void addItem()
+	public void addItem(bool addDIrectly= false)
 	{
 		if(objectList.Count >= maxBits) return;
 
-		lineRenderer.enabled= false;
-
+		long numb= RNJesus.gerRandomPowO2();
 		GameObject bit= Instantiate(obj, new Vector3(0, 0, 0), transform.rotation); 
 		bit.GetComponent<Image>().color= new Color( Random.Range(0f, 1f), Random.Range(0f, 1f), Random.Range(0f, 1f));
 		bit.transform.SetParent(transform);
 		bit.transform.SetParent(panel);
-		bit.transform.GetChild(0).GetComponent<TMPro.TextMeshProUGUI>().text= objectList.Count + "";
+		bit.transform.GetChild(0).GetComponent<TMPro.TextMeshProUGUI>().text= numb + "";
+
+		BitObject bitObject= bit.GetComponent<BitObject>();
+		bitObject.objectType= "bit";
+		bitObject.value= numb;
+
 		bit.GetComponent<RectTransform>().localScale= new Vector3(1f, 1f, 1f);
 
-		if(touchIndex >= objectList.Count)
-			objectList.Add(bit);
+		if(!addDIrectly)
+		{
+			centerObject.GetComponent<BitObject>().enabled= true;
+			if(touchIndex >= objectList.Count)
+				objectList.Add(centerObject);
+			else
+				objectList.Insert(touchIndex, centerObject);
+
+			bit.GetComponent<BitObject>().enabled= false;
+			bit.SetActive(false);
+			StartCoroutine(addItemAsync(bit));
+		}
 		else
-			objectList.Insert(touchIndex, bit);
+		{
+			if(touchIndex >= objectList.Count)
+				objectList.Add(bit);
+			else
+				objectList.Insert(touchIndex, bit);
+		}
 
 		vertexCount++;
 		updatePoints(touchIndex);
 
-		/*float deltaAngle = (2f * Mathf.PI) / vertexCount;
-		Vector3 pos= new Vector3(radius * Mathf.Cos(deltaAngle * touchIndex), radius * Mathf.Sin(deltaAngle * touchIndex));
-		bit.transform.position= pos;*/
+	}
+
+	private IEnumerator addItemAsync(GameObject item, float delay= 0.2f)
+	{
+		yield return new WaitForSeconds(delay);
+		centerObject= item;
+		centerObject.SetActive(true);
 	}
 
 	public void OnDestroy()

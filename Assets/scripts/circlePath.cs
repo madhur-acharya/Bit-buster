@@ -27,6 +27,7 @@ public class circlePath : MonoBehaviour
 	private float touchRate= 0.4f;
 	private float canTouch= -1f;
 	private Vector3 touchPos;
+	private BitObject chainingBit;
 
 	void Awake()
 	{
@@ -51,7 +52,7 @@ public class circlePath : MonoBehaviour
 		centerObject.GetComponent<RectTransform>().localScale= new Vector3(1f, 1f, 1f);
 		centerObject.GetComponent<BitObject>().enabled= false;
 
-		for(int i= 0; i < 3; i ++)
+		for(int i= 0; i < 2; i ++)
 		{
 			addItem(true, "bit");
 		}
@@ -162,9 +163,18 @@ public class circlePath : MonoBehaviour
 
 	public void addItem(bool addDIrectly= false, string type= "random")
 	{
-		if(objectList.Count >= maxBits) return;
+		//if(objectList.Count >= maxBits) return;
 
-		GameObject bit= createBitObject(type);
+		GameObject bit;
+
+		if(objectList.Count >= maxBits)
+		{
+			bit= createBitObject("combine");
+		}
+		else
+		{
+			bit= createBitObject(type);
+		}
 
 		if(!addDIrectly)
 		{
@@ -188,7 +198,6 @@ public class circlePath : MonoBehaviour
 
 		vertexCount++;
 		updatePoints(touchIndex);
-
 	}
 
 	private GameObject createBitObject(string explicitType= "random")
@@ -227,23 +236,116 @@ public class circlePath : MonoBehaviour
 				bitObject.objectType= "bit";
 				bitObject.value= numb;
 				break;
-			}
+			};
+			case "combine" : {
+				bitObject.objectType= "combine";
+				bit.transform.GetChild(0).GetComponent<TMPro.TextMeshProUGUI>().text= "+";
+				break;
+			};
 			default : {
 				bitObject.objectType= "bit";
 				bit.transform.GetChild(0).GetComponent<TMPro.TextMeshProUGUI>().text= "+";
 				bitObject.value= numb;
 				break;
-			}
+			};
 		}
 
 		return bit;
 	}
 
+	private bool checkForCombinations(bool chain= false)
+	{
+		for(int i= 0; i < objectList.Count; i++)
+		{
+			GameObject itm= objectList[i];
+
+			if(itm.GetComponent<BitObject>().objectType != "bit")
+			{
+				int prev= (i - 1 > -1) ? i-1 : objectList.Count - 1;
+				int next= (i + 1 < objectList.Count) ? i+1 : 0;
+				int mid= i;
+
+				Debug.Log(prev + ", " + i + ", " + next + " => " +  objectList[prev].GetComponent<BitObject>().value + ", " +  objectList[next].GetComponent<BitObject>().value);
+
+				if(objectList[prev].GetComponent<BitObject>().value == objectList[next].GetComponent<BitObject>().value)
+				{
+					GameObject ref1= objectList[prev];
+					GameObject ref2= objectList[next];
+					GameObject ref3= objectList[mid];
+
+					long val1= ref1.GetComponent<BitObject>().value;
+					long val2= ref2.GetComponent<BitObject>().value;
+
+					BitObject scriptRef= ref3.GetComponent<BitObject>();
+					scriptRef.objectType= "combine";
+
+					if(chain)
+					{
+						scriptRef.value= val1 * val2;
+						ref3.transform.GetChild(0).GetComponent<TMPro.TextMeshProUGUI>().text= scriptRef.value + "";
+						chainingBit= scriptRef;
+					}
+					else
+					{
+						scriptRef.value= val1 + val2;
+						ref3.transform.GetChild(0).GetComponent<TMPro.TextMeshProUGUI>().text= scriptRef.value + "";
+						chainingBit= null;
+					}
+
+					if(next > prev)
+					{
+						objectList.RemoveAt(next);
+						objectList.RemoveAt(prev);
+					}
+					else
+					{
+						objectList.RemoveAt(prev);
+						objectList.RemoveAt(next);
+					}
+
+					float angle= ((2f * Mathf.PI) / vertexCount) * mid;
+					ref1.GetComponent<BitObject>().lerpToPosition(angle);
+					ref2.GetComponent<BitObject>().lerpToPosition(angle);
+					Destroy(ref1, 0.2f);
+					Destroy(ref2, 0.2f);
+
+					vertexCount-= 2;
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
 	private IEnumerator addItemAsync(GameObject item, float delay= 0.2f)
 	{
-		yield return new WaitForSeconds(delay);
+		bool chain= false;
+
+		for(int i= 0; i < maxBits; i++)
+		{
+			yield return new WaitForSeconds(delay);
+			
+			if(!checkForCombinations(chain))
+			{
+				break;
+			}
+			else
+			{
+				chain= true;
+			}
+		}
+
 		centerObject= item;
 		centerObject.SetActive(true);
+		if(chainingBit != null)
+		{
+			chainingBit.objectType= "bit";
+			chainingBit= null;
+		}
+		
+		yield return new WaitForSeconds(delay);
+		updatePoints();
+		Debug.Log("Chain complete");
 	}
 
 	#if UNITY_EDITOR
